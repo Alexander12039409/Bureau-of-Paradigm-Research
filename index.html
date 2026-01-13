@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Cloud Sheet — Бюро</title>
+    <style>
+        :root { --bg: #ffffff; --border: #000; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Экран авторизации */
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #000; box-sizing: border-box; }
+        .auth-box { display: flex; flex-direction: column; gap: 15px; width: 300px; text-align: center; }
+        .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px; text-align: center; text-transform: uppercase; outline: none; }
+
+        /* Верхняя панель */
+        .top-bar { display: flex; width: 100%; max-width: 1000px; gap: 10px; margin-bottom: 20px; align-items: center; overflow-x: auto; padding-bottom: 5px; }
+        .char-tabs { display: flex; gap: 5px; }
+        .tab-char { padding: 8px 15px; border: 2px solid #000; background: #eee; cursor: pointer; font-weight: bold; white-space: nowrap; border-radius: 4px; }
+        .tab-char.active { background: #000; color: #fff; }
+        .add-char { background: #27ae60; color: #fff; border: 2px solid #27ae60; }
+
+        .controls { display: flex; gap: 10px; margin-left: auto; align-items: center; }
+        .btn { padding: 8px 16px; border: 2px solid #000; background: #fff; cursor: pointer; font-weight: bold; border-radius: 4px; white-space: nowrap; }
+        .btn:hover { background: #000; color: #fff; }
+        #display-key { font-family: monospace; font-size: 12px; background: #f0f0f0; padding: 5px 10px; border: 1px dashed #000; cursor: pointer; }
+        #sync-status { font-size: 10px; text-transform: uppercase; font-weight: bold; color: #888; white-space: nowrap; }
+
+        /* Сетка листа */
+        .sheet {
+            display: grid; width: 100%; max-width: 1000px; background: #fff; padding: 20px; grid-gap: 15px;
+            grid-template-areas: 
+                "name trait flaw"
+                "state skills actions"
+                "chars skills actions"
+                "saves skills traumas"
+                "paradigm skills traumas"
+                "notes notes notes";
+            grid-template-columns: 1fr 1.2fr 1fr;
+        }
+
+        .sec-name { grid-area: name; } .sec-trait { grid-area: trait; } .sec-flaw { grid-area: flaw; }
+        .sec-state { grid-area: state; } .sec-chars { grid-area: chars; } .sec-saves { grid-area: saves; }
+        .sec-paradigm { grid-area: paradigm; } .sec-skills { grid-area: skills; }
+        .sec-actions { grid-area: actions; } .sec-traumas { grid-area: traumas; } .sec-notes { grid-area: notes; }
+
+        .section { border: 2px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; background: #fff; position: relative; }
+        .header { background: #000; color: #fff; text-align: center; padding: 8px; font-weight: bold; text-transform: uppercase; font-size: 11px; border-radius: 7px 7px 0 0; display: flex; justify-content: center; align-items: center; position: relative; z-index: 5; }
+        .add-btn { position: absolute; right: 8px; cursor: pointer; background: #fff; color: #000; width: 20px; height: 20px; border-radius: 50%; line-height: 18px; font-size: 16px; font-weight: bold; text-align: center; }
+
+        .content { padding: 10px; flex-grow: 1; }
+        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; min-height: 20px; }
+        .list-item { padding: 8px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 12px; background: #fafafa; overflow: hidden; text-overflow: ellipsis; }
+
+        .overflow-wrapper { display: flex; align-items: center; position: relative; }
+        .info-icon { display: none; width: 16px; height: 16px; background: #000; color: #fff; border-radius: 50%; font-size: 11px; text-align: center; line-height: 16px; cursor: help; margin-left: 5px; flex-shrink: 0; }
+        .info-icon:hover::after { content: attr(data-text); position: absolute; bottom: 120%; right: 0; background: #333; color: #fff; padding: 10px; border-radius: 6px; width: 180px; z-index: 999; font-weight: normal; }
+        .stat-grid { display: flex; justify-content: space-around; gap: 5px; }
+        .circle-stat { width: 42px; height: 42px; border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+        .circle-stat input { width: 28px; text-align: center; font-weight: bold; border: none; outline: none; font-size: 16px; background: transparent; }
+        .label { font-size: 9px; font-weight: bold; text-transform: uppercase; text-align: center; }
+        .item-row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
+        .dots { display: flex; gap: 4px; }
+        .dot { width: 13px; height: 13px; border: 1.5px solid #000; border-radius: 50%; cursor: pointer; }
+        .dot.filled { background: #000; }
+        .action-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        .action-row input[type="radio"] { accent-color: #000; width: 16px; height: 16px; cursor: pointer; }
+
+        .mobile-tabs { display: none; }
+        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 85%; max-width: 400px; }
+        .modal-content textarea { width: 100%; min-height: 120px; margin-top: 10px; padding: 10px; box-sizing: border-box; }
+
+        @media (max-width: 850px) {
+            .sheet { grid-template-columns: 1fr 1fr; grid-template-areas: "name name" "trait flaw" "state saves" "chars chars" "tabs tabs" "t-content t-content" "traumas traumas" "notes notes"; }
+            .mobile-tabs { display: flex; grid-area: tabs; gap: 4px; margin: 10px 0; }
+            .tab-btn { flex: 1; padding: 10px; border: 2px solid #000; background: #fff; font-weight: bold; font-size: 11px; }
+            .tab-btn.active { background: #000; color: #fff; }
+            .sec-skills, .sec-paradigm, .sec-actions { display: none; grid-area: t-content; }
+            .sec-skills.active, .sec-paradigm.active, .sec-actions.active { display: flex; }
+        }
+
+        #backTop { position: fixed; bottom: 15px; right: 15px; display: none; width: 40px; height: 40px; background: #000; color: #fff; border-radius: 50%; border: none; z-index: 1000; }
+        input[type="text"] { width: 100%; border: none; outline: none; font-size: 14px; background: transparent; }
+        hr { border: 0; border-top: 1px dashed #ccc; margin: 8px 0; }
+    </style>
+</head>
+<body>
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h1 style="margin-bottom:0;">Бюро Парадигмальных Исследований</h1>
+        <p style="font-size:12px; margin-top:5px;">Введите код ячейки или создайте новую</p>
+        <input type="text" id="party-key-input" class="auth-input" placeholder="КОД ПАРТИИ">
+        <button class="btn" style="background:#000; color:#fff; padding:12px;" onclick="connectToParty()">ПОДКЛЮЧИТЬСЯ</button>
+        <div style="display:flex; align-items:center; gap:10px;"><hr style="flex:1;"> ИЛИ <hr style="flex:1;"></div>
+        <button class="btn" onclick="createNewParty()">СОЗДАТЬ НОВУЮ ПАРТИЮ</button>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div class="char-tabs" id="char-tabs-list"></div>
+    <button class="tab-char add-char" title="Добавить персонажа" onclick="addNewCharacter()">+</button>
+    <div class="controls">
+        <button class="btn" title="Обновить данные из облака" onclick="fetchUpdate()">🔄</button>
+        <div id="display-key" title="Нажмите, чтобы скопировать код" onclick="copyKey()">🔑 KEY</div>
+        <span id="sync-status">Готов</span>
+    </div>
+</div>
+
+<div class="sheet">
+    <div class="section sec-name"><div class="header">Имя</div><div class="content"><input type="text" id="name" oninput="updateCharName(this.value); autoSave()"></div></div>
+    <div class="section sec-trait"><div class="header">Черта</div><div class="content overflow-wrapper"><input type="text" id="trait" oninput="checkOverflow(this); autoSave()"><div class="info-icon" id="trait-tip">i</div></div></div>
+    <div class="section sec-flaw"><div class="header">Изъян</div><div class="content overflow-wrapper"><input type="text" id="flaw" oninput="checkOverflow(this); autoSave()"><div class="info-icon" id="flaw-tip">i</div></div></div>
+    
+    <div class="section sec-state"><div class="header">Состояние</div><div class="content stat-grid">
+        <div><div class="circle-stat"><input type="text" data-id="hp" value="0" oninput="autoSave()"></div><div class="label">Раны</div></div>
+        <div><div class="circle-stat"><input type="text" data-id="ar" value="0" oninput="autoSave()"></div><div class="label">Броня</div></div>
+        <div><div class="circle-stat"><input type="text" data-id="sa" value="0" oninput="autoSave()"></div><div class="label">Рассуд.</div></div>
+    </div></div>
+
+    <div class="section sec-saves"><div class="header">Спасброски</div><div class="content stat-grid">
+        <div><div class="circle-stat"><input type="text" data-id="sv1" value="0" oninput="autoSave()"></div><div class="label">Уклон.</div></div>
+        <div><div class="circle-stat"><input type="text" data-id="sv2" value="0" oninput="autoSave()"></div><div class="label">Психика</div></div>
+    </div></div>
+
+    <div class="section sec-chars"><div class="header">Характеристики</div><div class="content stat-grid">
+        <div><div class="circle-stat"><input type="text" data-id="b" value="0" oninput="autoSave()"></div><div class="label">Тело</div></div>
+        <div><div class="circle-stat"><input type="text" data-id="m" value="0" oninput="autoSave()"></div><div class="label">Разум</div></div>
+        <div><div class="circle-stat"><input type="text" data-id="s" value="0" oninput="autoSave()"></div><div class="label">Душа</div></div>
+    </div></div>
+
+    <div class="mobile-tabs">
+        <button class="tab-btn active" onclick="setTab('skills', this)">Навыки</button>
+        <button class="tab-btn" onclick="setTab('paradigm', this)">Парадигма</button>
+        <button class="tab-btn" onclick="setTab('actions', this)">Действия</button>
+    </div>
+
+    <div class="section sec-skills active"><div class="header">Навыки</div><div class="content" id="skills-list"></div></div>
+    <div class="section sec-paradigm"><div class="header">Парадигма</div><div class="content" id="paradigm-list"></div></div>
+    <div class="section sec-actions"><div class="header">Действия</div><div class="content" id="actions-list"></div></div>
+
+    <div class="section sec-traumas">
+        <div class="header">Психические травмы <div class="add-btn" onclick="openModal('trauma', -1)">+</div></div>
+        <div class="content"><div id="trauma-list" class="list-container"></div></div>
+    </div>
+
+    <div class="section sec-notes">
+        <div class="header">Заметки <div class="add-btn" onclick="openModal('note', -1)">+</div></div>
+        <div class="content"><div id="note-list" class="list-container"></div></div>
+    </div>
+</div>
+
+<div id="uModal" class="modal">
+    <div class="modal-content">
+        <h3 id="mTitle">Запись</h3>
+        <textarea id="mText"></textarea>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+            <button class="btn" onclick="closeModal()">Отмена</button>
+            <button class="btn" style="background:#000; color:#fff;" onclick="saveModal()">ОК</button>
+        </div>
+    </div>
+</div>
+
+<button id="backTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</button>
+
+<script>
+    const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxGIirmjfctTSgafg-WAXDdQwI7v4iJTVi-Ijp9b58uEclIdshg1OtRcqMWUt_1gh4vaw/exec';
+    const SKILLS = ["Внимание", "Эрудиция", "Наука", "Оккультизм", "Компьютеры", "Медицина", "Ремонт", "sep", "Ближний бой", "Легк. оружие", "Тяж. оружие", "Психическая сила", "sep", "Убеждение", "Обман", "Запугивание", "sep", "Атлетика", "Уклонение", "Скрытность", "Взлом"];
+
+    let characters = [];
+    let activeCharIndex = 0;
+    let currentPartyId = '';
+    let curType = '', curIdx = -1;
+    let syncTimer;
+
+    // --- АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ ---
+    function autoSave() {
+        document.getElementById('sync-status').innerText = "✏️ Изменение...";
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(() => {
+            syncWithCloud();
+        }, 2000); 
+    }
+
+    async function syncWithCloud() {
+        if(!currentPartyId) return;
+        saveCurrentToState();
+        const status = document.getElementById('sync-status');
+        status.innerText = "⏳ Сохранение...";
+        try {
+            await fetch(CLOUD_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ partyId: currentPartyId, content: JSON.stringify(characters) })
+            });
+            setTimeout(() => status.innerText = "✅ Сохранено", 500);
+        } catch (e) { status.innerText = "❌ Ошибка"; }
+    }
+
+    // Запрос обновления (без сохранения текущего, чтобы не перезатереть облако старьем)
+    async function fetchUpdate() {
+        if(!currentPartyId) return;
+        const status = document.getElementById('sync-status');
+        status.innerText = "🔄 Обновление...";
+        try {
+            const response = await fetch(`${CLOUD_URL}?partyId=${currentPartyId}`);
+            const text = await response.text();
+            if (text && text !== "Not Found") {
+                characters = JSON.parse(text);
+                // Проверка границ индекса на случай удаления персонажа другим игроком
+                if (activeCharIndex >= characters.length) activeCharIndex = 0;
+                renderTabs();
+                loadActiveToUI();
+                status.innerText = "✅ Обновлено";
+            }
+        } catch (e) { status.innerText = "❌ Ошибка"; }
+    }
+
+    // --- ОБЛАЧНЫЕ ФУНКЦИИ ---
+    async function connectToParty() {
+        const key = document.getElementById('party-key-input').value.trim().toUpperCase();
+        if (!key) return alert("Введите код!");
+        try {
+            const response = await fetch(`${CLOUD_URL}?partyId=${key}`);
+            const text = await response.text();
+            if (text === "Not Found" || !text) {
+                alert("Партия не найдена.");
+            } else {
+                characters = JSON.parse(text);
+                currentPartyId = key;
+                finishAuth();
+            }
+        } catch (e) { alert("Ошибка сервера."); }
+    }
+
+    function createNewParty() {
+        currentPartyId = Math.random().toString(36).substr(2, 6).toUpperCase();
+        characters = [createNewCharObj("Герой 1")];
+        finishAuth();
+        syncWithCloud();
+    }
+
+    function finishAuth() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('display-key').innerText = "🔑 " + currentPartyId;
+        renderTabs();
+        loadActiveToUI();
+    }
+
+    // --- ПЕРСОНАЖИ ---
+    function createNewCharObj(name) {
+        return {
+            meta: { n: name, t: "", f: "" },
+            stats: { hp: "0", ar: "0", sa: "0", sv1: "0", sv2: "0", b: "0", m: "0", s: "0" },
+            skills: {}, traumas: [], notes: [],
+            rads: [false, false, false, false, false],
+            par: ["", "", ""]
+        };
+    }
+
+    function addNewCharacter() {
+        saveCurrentToState();
+        characters.push(createNewCharObj("Новый герой"));
+        activeCharIndex = characters.length - 1;
+        renderTabs();
+        loadActiveToUI();
+        autoSave();
+    }
+
+    function switchCharacter(idx) {
+        saveCurrentToState();
+        activeCharIndex = idx;
+        renderTabs();
+        loadActiveToUI();
+    }
+
+    function updateCharName(val) {
+        characters[activeCharIndex].meta.n = val;
+        renderTabs();
+    }
+
+    function saveCurrentToState() {
+        if (!characters[activeCharIndex]) return;
+        const c = characters[activeCharIndex];
+        c.meta.n = document.getElementById('name').value;
+        c.meta.t = document.getElementById('trait').value;
+        c.meta.f = document.getElementById('flaw').value;
+        document.querySelectorAll('[data-id]').forEach(i => c.stats[i.dataset.id] = i.value);
+        document.querySelectorAll('.dots').forEach(s => c.skills[s.dataset.skill] = s.querySelectorAll('.filled').length);
+        c.par = Array.from(document.querySelectorAll('.par-input')).map(i => i.value);
+        c.rads = Array.from(document.querySelectorAll('.act-radio')).map(r => r.checked);
+    }
+
+    function loadActiveToUI() {
+        const c = characters[activeCharIndex];
+        document.getElementById('name').value = c.meta.n;
+        document.getElementById('trait').value = c.meta.t;
+        document.getElementById('flaw').value = c.meta.f;
+        Object.keys(c.stats).forEach(k => { const el = document.querySelector(`[data-id="${k}"]`); if(el) el.value = c.stats[k]; });
+        document.querySelectorAll('.dots').forEach(s => {
+            const val = c.skills[s.dataset.skill] || 0;
+            s.querySelectorAll('.dot').forEach((dot, i) => i < val ? dot.classList.add('filled') : dot.classList.remove('filled'));
+        });
+        document.querySelectorAll('.par-input').forEach((inp, i) => inp.value = c.par[i] || "");
+        document.querySelectorAll('.act-radio').forEach((rd, i) => { rd.checked = c.rads[i]; rd.dataset.checked = c.rads[i]; });
+        renderLists();
+        checkOverflow(document.getElementById('trait'));
+        checkOverflow(document.getElementById('flaw'));
+    }
+
+    // --- ИНТЕРФЕЙС ---
+    function initLayout() {
+        const sc = document.getElementById('skills-list'); sc.innerHTML = '';
+        SKILLS.forEach(s => {
+            if(s === "sep") return sc.innerHTML += '<hr>';
+            sc.innerHTML += `<div class="item-row"><div class="dots" data-skill="${s}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><span>${s}</span></div>`;
+        });
+        const pc = document.getElementById('paradigm-list'); pc.innerHTML = '';
+        for(let i=0; i<3; i++) pc.innerHTML += `<div class="item-row"><div class="dots" data-skill="p${i}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><input type="text" class="par-input" oninput="autoSave()" placeholder="..."></div>`;
+        const ac = document.getElementById('actions-list'); ac.innerHTML = '';
+        ["Ответный выстрел", "Доп. выстрел", "Атака возможности", "Контр-атака", "Доп. удар"].forEach((a, i) => ac.innerHTML += `<div class="action-row"><input type="radio" name="act-${i}" class="act-radio" onclick="toggleRadio(this); autoSave()"><div><strong>${a}</strong></div></div>`);
+    }
+
+    function renderTabs() {
+        const list = document.getElementById('char-tabs-list');
+        list.innerHTML = characters.map((c, i) => `<div class="tab-char ${i===activeCharIndex?'active':''}" onclick="switchCharacter(${i})">${c.meta.n || '...'}</div>`).join('');
+    }
+
+    function renderLists() {
+        const c = characters[activeCharIndex];
+        document.getElementById('note-list').innerHTML = c.notes.map((t, i) => `<div class="list-item" onclick="openModal('note', ${i})">${t}</div>`).join('');
+        document.getElementById('trauma-list').innerHTML = c.traumas.map((t, i) => `<div class="list-item" onclick="openModal('trauma', ${i})">${t}</div>`).join('');
+    }
+
+    function openModal(type, idx) {
+        curType = type; curIdx = idx;
+        const data = (type === 'note') ? characters[activeCharIndex].notes : characters[activeCharIndex].traumas;
+        document.getElementById('mTitle').innerText = (type === 'note') ? 'Заметка' : 'Травма';
+        document.getElementById('mText').value = (idx === -1) ? "" : data[idx];
+        document.getElementById('uModal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('uModal').style.display = 'none'; }
+    function saveModal() {
+        const val = document.getElementById('mText').value.trim();
+        const data = (curType === 'note') ? characters[activeCharIndex].notes : characters[activeCharIndex].traumas;
+        if(val) { if(curIdx === -1) data.push(val); else data[curIdx] = val; renderLists(); autoSave(); }
+        else if(curIdx !== -1) { data.splice(curIdx, 1); renderLists(); autoSave(); }
+        closeModal();
+    }
+
+    function clickDot(el, lvl) {
+        const ds = el.parentElement.querySelectorAll('.dot');
+        if(!el.classList.contains('filled')) {
+            if(lvl > 1 && !ds[lvl-2].classList.contains('filled')) return;
+            el.classList.add('filled');
+        } else { for(let i=lvl-1; i<ds.length; i++) ds[i].classList.remove('filled'); }
+    }
+    function toggleRadio(r) {
+        if(r.dataset.checked === "true") { r.checked = false; r.dataset.checked = "false"; }
+        else { r.dataset.checked = "true"; }
+    }
+    function setTab(name, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+        document.querySelectorAll('.sec-skills, .sec-paradigm, .sec-actions').forEach(s => s.classList.remove('active'));
+        document.querySelector('.sec-' + name).classList.add('active');
+    }
+    function checkOverflow(el) {
+        const tip = document.getElementById(el.id + '-tip'); if(!tip) return;
+        tip.style.display = (el.scrollWidth > el.clientWidth) ? 'block' : 'none';
+        tip.setAttribute('data-text', el.value);
+    }
+    function copyKey() { navigator.clipboard.writeText(currentPartyId); alert("Код скопирован: " + currentPartyId); }
+
+    window.onscroll = () => document.getElementById('backTop').style.display = (window.scrollY > 300) ? 'block' : 'none';
+    window.onload = () => { initLayout(); };
+</script>
+
+</body>
+</html>
