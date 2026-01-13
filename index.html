@@ -26,6 +26,9 @@
         .auth-box { display: flex; flex-direction: column; gap: 15px; width: 300px; text-align: center; align-items: center; }
         .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px !important; text-align: center; text-transform: uppercase; outline: none; width: 100%; box-sizing: border-box; border-radius: 0; }
         .auth-logo { width: 120px; height: auto; margin-bottom: 10px; }
+        
+        /* PRELOADER */
+        #preloader { display: none; margin-top: 15px; font-weight: bold; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; }
 
         /* HEADER */
         .app-header {
@@ -124,7 +127,7 @@
         .mobile-tabs-container { display: none; }
         
         @media (max-width: 850px) {
-            .sheet { display: flex; flex-direction: column; padding: 15px; }
+            .sheet { display: flex; flex-direction: column; padding: 15px; grid-gap: 8px; }
             #name { font-size: 28px; }
             .left-area, .right-area, .skills-area { display: contents; }
             .sec-name { order: 1; }
@@ -140,7 +143,7 @@
             .sec-skills.active, .sec-paradigm.active, .sec-actions.active { display: block; }
             .right-area > .section:nth-child(2) { order: 10; }
             .right-area > .section:nth-child(3) { order: 11; }
-            .section { margin-bottom: 15px; }
+            .section { margin-bottom: 8px; }
         }
     </style>
 </head>
@@ -177,10 +180,11 @@
                 <ellipse cx="64.2227" cy="145.5" rx="7" ry="6.5" fill="black"/>
             </svg>
         </div>
-        <h1>Бюро</h1>
+        <h1>Бюро парадигмальных исследований</h1>
         <input type="text" id="party-key-input" class="auth-input" placeholder="XXX-XXX">
         <button class="btn" style="background:#000; color:#fff !important;" onclick="connectToParty()">ПОДКЛЮЧИТЬСЯ</button>
         <button class="btn" onclick="createNewParty()">СОЗДАТЬ ЯЧЕЙКУ</button>
+        <div id="preloader">ПОДКЛЮЧЕНИЕ...</div>
     </div>
 </div>
 
@@ -354,23 +358,27 @@
     async function connectToParty() {
         const key = document.getElementById('party-key-input').value.trim().toUpperCase();
         if(!key) return;
-        const res = await fetch(`${CLOUD_URL}?partyId=${key}`);
-        const text = await res.text();
-        if (text !== "Not Found") { characters = JSON.parse(text); currentPartyId = key; finishAuth(); }
-        else { alert("Партия не найдена"); }
+        document.getElementById('preloader').style.display = 'block';
+        try {
+            const res = await fetch(`${CLOUD_URL}?partyId=${key}`);
+            const text = await res.text();
+            if (text !== "Not Found") { characters = JSON.parse(text); currentPartyId = key; finishAuth(); }
+            else { alert("Партия не найдена"); }
+        } catch (e) { console.error("Conn error", e); }
+        finally { document.getElementById('preloader').style.display = 'none'; }
     }
 
     function createNewParty() { currentPartyId = Math.random().toString(36).substr(2, 6).toUpperCase(); characters = [createNewCharObj("Агент 1")]; finishAuth(); syncWithCloud(); }
     function finishAuth() { document.getElementById('auth-screen').style.display = 'none'; document.getElementById('display-key').innerText = currentPartyId; initLayout(); renderCharList(); loadActiveToUI(); }
     
-    // Чистый объект нового персонажа
     function createNewCharObj(name) { 
         return { 
             meta: { n: name }, 
             stats: { hp:"", ar:"", sa:"", b:"", m:"", s:"", sv1:"", sv2:"" }, 
             skills: {}, 
             traumas: [], notes: [], flaws: [], traits: [], rads: [], par: ["", "", ""],
-            customSkillNames: ["", "", "", ""]
+            customSkillNames: ["", "", "", ""],
+            customAction: ""
         }; 
     }
     
@@ -379,11 +387,8 @@
         const newChar = createNewCharObj("Новый агент");
         characters.push(newChar); 
         activeCharIndex = characters.length - 1; 
-        
-        // Сброс всех инпутов в UI перед загрузкой
         document.querySelectorAll('input').forEach(i => i.value = "");
         document.querySelectorAll('.dot').forEach(d => d.classList.remove('filled'));
-        
         renderCharList(); 
         loadActiveToUI(); 
         autoSave(); 
@@ -402,6 +407,7 @@
         c.par = Array.from(document.querySelectorAll('.sec-paradigm .par-input')).map(i => i.value);
         c.rads = ACTIONS.map((_, i) => document.getElementById(`act-dot-${i}`)?.classList.contains('filled') || false);
         c.customSkillNames = Array.from(document.querySelectorAll('.sec-skills .par-input')).map(i => i.value);
+        c.customAction = document.getElementById('custom-action-input')?.value || "";
     }
 
     function loadActiveToUI() {
@@ -410,7 +416,6 @@
         const nameEl = document.getElementById('name');
         nameEl.value = c.meta.n || "";
         adjustNameHeight(nameEl);
-        
         document.querySelectorAll('[data-id]').forEach(el => { el.value = (c.stats && c.stats[el.dataset.id]) || ""; });
         document.querySelectorAll('.dots').forEach(s => { 
             const val = (c.skills && c.skills[s.dataset.skill]) || 0; 
@@ -419,6 +424,7 @@
         document.querySelectorAll('.sec-paradigm .par-input').forEach((inp, i) => inp.value = (c.par && c.par[i]) || "");
         document.querySelectorAll('.sec-skills .par-input').forEach((inp, i) => inp.value = (c.customSkillNames && c.customSkillNames[i]) || "");
         ACTIONS.forEach((_, i) => document.getElementById(`act-dot-${i}`)?.classList.toggle('filled', !!(c.rads && c.rads[i])));
+        if(document.getElementById('custom-action-input')) document.getElementById('custom-action-input').value = c.customAction || "";
         renderTextLists();
     }
 
@@ -433,6 +439,7 @@
         for(let i=0; i<3; i++) pc.innerHTML += `<div class="item-row"><div class="dots" data-skill="p${i}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><input type="text" class="par-input" oninput="autoSave()"></div>`;
         const ac = document.getElementById('actions-list'); ac.innerHTML = '';
         ACTIONS.forEach((a, i) => ac.innerHTML += `<div class="item-row" onclick="toggleAction(${i}); autoSave()" style="cursor:pointer"><span>${a}</span><div class="dot" id="act-dot-${i}" style="margin-left:auto;"></div></div>`);
+        ac.innerHTML += `<div class="item-row" style="margin-top:10px;"><input type="text" id="custom-action-input" class="par-input" oninput="autoSave()" placeholder="Доп. действие..."></div>`;
     }
 
     function clickDot(el, lvl) { const ds = el.parentElement.querySelectorAll('.dot'); const isFilled = el.classList.contains('filled'); ds.forEach((d, i) => d.classList.toggle('filled', i < (isFilled ? lvl - 1 : lvl))); }
