@@ -7,419 +7,446 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Бюро">
-    
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlJQRyBDbG91ZCBTaGVldCIsCiAgInNob3J0X25hbWUiOiAiQnVyZWF1IiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuY29uczhhYmxlLmNvbS9wbmcvNTEyL29wdGljYWxfY29sbG9yL2dlbmVyaWNfdXNlci5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
+    <meta name="theme-color" content="#ffffff">
 
     <style>
-        :root { --bg: #ffffff; --border: #000; --max-w: 1000px; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        :root { --bg: #ffffff; --border: #000; --max-w: 1100px; }
         
-        /* Блокировка скролла */
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; color: #000 !important; }
+        input, button, textarea, div, span, a { color: #000 !important; font-family: inherit; }
+        
         body.lock-scroll { overflow: hidden; }
 
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* AUTH SCREEN */
         #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #000; box-sizing: border-box; }
-        .auth-box { display: flex; flex-direction: column; gap: 15px; width: 300px; text-align: center; }
-        
-        /* Фикс зума для iOS: шрифт не менее 16px */
-        .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px !important; text-align: center; text-transform: uppercase; outline: none; width: 100%; box-sizing: border-box; }
+        .auth-box { display: flex; flex-direction: column; gap: 15px; width: 300px; text-align: center; align-items: center; }
+        .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px !important; text-align: center; text-transform: uppercase; outline: none; width: 100%; box-sizing: border-box; border-radius: 0; }
+        .auth-logo { width: 120px; height: auto; margin-bottom: 10px; }
 
-        .top-bar { display: flex; width: 100%; max-width: var(--max-w); gap: 10px; margin-bottom: 20px; align-items: center; overflow-x: auto; padding-bottom: 5px; }
-        .char-tabs { display: flex; gap: 5px; }
-        .tab-char { padding: 8px 15px; border: 2px solid #000; background: #eee; cursor: pointer; font-weight: bold; white-space: nowrap; border-radius: 4px; }
-        .tab-char.active { background: #000; color: #fff; }
-        .add-char { background: #27ae60; color: #fff; border: 2px solid #27ae60; }
+        /* HEADER */
+        .app-header {
+            width: 100%; max-width: var(--max-w);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; box-sizing: border-box;
+            background: #fff; border-bottom: 2px solid #000;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo svg { height: 44px; width: auto; display: block; }
+        .burger { width: 30px; height: 24px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; }
+        .burger span { display: block; width: 100%; height: 4px; background: #000; border-radius: 2px; }
 
-        .controls { display: flex; gap: 10px; margin-left: auto; align-items: center; }
-        .btn { padding: 8px 16px; border: 2px solid #000; background: #fff; cursor: pointer; font-weight: bold; border-radius: 4px; white-space: nowrap; }
-        .btn:hover { background: #000; color: #fff; }
-        #display-key { font-family: monospace; font-size: 12px; background: #f0f0f0; padding: 5px 10px; border: 1px dashed #000; cursor: pointer; }
-        #sync-status { font-size: 10px; text-transform: uppercase; font-weight: bold; color: #888; white-space: nowrap; }
+        /* MENU */
+        .menu-drawer { position: fixed; top: 0; right: -100%; width: 280px; height: 100%; background: #fff; border-left: 2px solid #000; z-index: 2000; transition: right 0.3s ease; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; box-shadow: -5px 0 20px rgba(0,0,0,0.2); }
+        .menu-drawer.active { right: 0; }
+        .menu-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 1999; }
+        .menu-overlay.active { display: block; }
+        .menu-section { margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px; }
+        .menu-title { font-weight: bold; text-transform: uppercase; font-size: 12px; margin-bottom: 10px; color: #666 !important; }
 
+        .char-list-item { padding: 10px; border: 1px solid #ddd; background: #eee; margin-bottom: 5px; cursor: pointer; font-weight: bold; font-size: 14px; border-radius: 4px; }
+        .char-list-item.selected { border: 2px solid #000; background: #fff; }
+        .char-list-item.add-new { background: #000; color: #fff !important; text-align: center; border: 2px solid #000; margin-top: 10px; }
+
+        /* GRID SYSTEM */
         .sheet {
-            display: grid; width: 100%; max-width: var(--max-w); background: #fff; padding: 20px; grid-gap: 15px; box-sizing: border-box;
+            display: grid; width: 100%; max-width: var(--max-w); background: #fff; padding: 20px; grid-gap: 20px; box-sizing: border-box;
             grid-template-areas: 
-                "name person person"
-                "state skills actions"
-                "chars skills actions"
-                "saves skills traumas"
-                "paradigm skills traumas"
-                "notes notes notes";
-            grid-template-columns: 1fr 1.2fr 1fr;
+                "name      name      name"
+                "person    person    person"
+                "left-col  skills    right-col";
+            grid-template-columns: 1fr 1.1fr 1fr;
+            grid-template-rows: auto auto 1fr;
         }
 
-        .sec-name { grid-area: name; } .sec-person { grid-area: person; }
-        .sec-state { grid-area: state; } .sec-chars { grid-area: chars; } .sec-saves { grid-area: saves; }
-        .sec-paradigm { grid-area: paradigm; } .sec-skills { grid-area: skills; }
-        .sec-actions { grid-area: actions; } .sec-traumas { grid-area: traumas; } .sec-notes { grid-area: notes; }
+        .sec-name { grid-area: name; padding: 0 5px; } 
+        #name { 
+            width: 100%; 
+            font-size: 32px; 
+            font-weight: 900; 
+            border: none; 
+            outline: none; 
+            background: transparent;
+            word-wrap: break-word;
+            overflow: hidden;
+            resize: none;
+            display: block;
+            height: auto;
+            line-height: 1.1;
+            padding: 10px 0;
+            text-transform: uppercase;
+        }
 
-        .section { border: 2px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; background: #fff; position: relative; }
-        .header { background: #000; color: #fff; text-align: center; padding: 8px; font-weight: bold; text-transform: uppercase; font-size: 11px; border-radius: 7px 7px 0 0; display: flex; justify-content: center; align-items: center; position: relative; z-index: 5; }
+        .sec-person { grid-area: person; margin-bottom: 10px; }
+        .side-col { display: flex; flex-direction: column; gap: 20px; }
+        .left-area { grid-area: left-col; }
+        .right-area { grid-area: right-col; }
+        .skills-area { grid-area: skills; }
+
+        .section { border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; background: #fff; overflow: hidden; }
+        .header { background: #000; color: #fff !important; text-align: center; padding: 10px; font-weight: bold; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; position: relative; }
         
-        .sub-tabs { display: flex; background: #eee; border-bottom: 2px solid #000; position: relative; }
-        .sub-tab { flex: 1; padding: 5px; text-align: center; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; border-right: 1px solid #ccc; }
-        .sub-tab:last-child { border-right: none; }
-        .sub-tab.active { background: #fff; color: #000; box-shadow: inset 0 -3px 0 #000; }
+        .add-btn { cursor: pointer; background: #fff; color: #000 !important; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #000; line-height: 18px; font-size: 18px; font-weight: bold; text-align: center; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
 
-        .add-btn { position: absolute; right: 8px; cursor: pointer; background: #fff; color: #000; width: 20px; height: 20px; border-radius: 50%; line-height: 18px; font-size: 16px; font-weight: bold; text-align: center; z-index: 10; }
-
-        .content { padding: 10px; flex-grow: 1; }
-        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; min-height: 20px; }
-        .list-item { padding: 8px; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 12px; background: #fafafa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
+        .content { padding: 15px; flex-grow: 1; font-size: 14px; }
+        
         .stat-grid { display: flex; justify-content: space-around; gap: 5px; }
-        .circle-stat { width: 42px; height: 42px; border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-        .circle-stat input { width: 28px; text-align: center; font-weight: bold; border: none; outline: none; font-size: 16px !important; background: transparent; }
-        .label { font-size: 9px; font-weight: bold; text-transform: uppercase; text-align: center; }
-        .item-row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
-        .dots { display: flex; gap: 4px; }
-        .dot { width: 13px; height: 13px; border: 1.5px solid #000; border-radius: 50%; cursor: pointer; }
+        .circle-stat { width: 44px; height: 44px; border: 2.5px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; overflow: hidden; }
+        .circle-stat input { width: 100%; height: 100%; text-align: center; font-weight: bold; border: none; outline: none; font-size: 18px !important; background: transparent; padding: 0; }
+        .label { font-size: 10px; font-weight: bold; text-transform: uppercase; text-align: center; }
+
+        .item-row { display: flex; align-items: center; margin-bottom: 6px; gap: 12px; min-height: 24px; }
+        .item-row span { font-weight: 700; font-size: 15px; }
+        .dots { display: flex; gap: 6px; flex-shrink: 0; }
+        .dot { width: 18px; height: 18px; border: 1.8px solid #000; border-radius: 50%; cursor: pointer; flex-shrink: 0; }
         .dot.filled { background: #000; }
-        .action-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-        .action-row input[type="radio"] { accent-color: #000; width: 16px; height: 16px; cursor: pointer; }
+        .par-input { width: 100%; border: none; border-bottom: 1.5px solid #000; font-size: 15px; font-weight: bold; outline: none; background: transparent; padding: 0; }
+        hr { border: 0; border-top: 1.5px dashed #999; margin: 10px 0; width: 100%; }
 
-        /* Дровер (Drawer) */
+        .pill-tabs { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+        .pill-btn { padding: 6px 16px; border: 1.5px solid #000; border-radius: 20px; background: #fff; font-size: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        .pill-btn.active { background: #000; color: #fff !important; }
+
+        .list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; min-height: 20px; }
+        .list-item { padding: 8px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 13px; background: #f9f9f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .drawer-overlay { display: none; position: fixed; z-index: 9998; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .drawer { 
-            position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); 
-            width: 100%; max-width: var(--max-w); max-height: 80%; 
-            background: #fff; z-index: 9999; border-radius: 20px 20px 0 0; 
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.2); transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            box-sizing: border-box; padding: 20px; display: flex; flex-direction: column;
-        }
+        .drawer { position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; background: #fff; z-index: 9999; border-radius: 20px 20px 0 0; padding: 20px; transition: bottom 0.3s ease; display: flex; flex-direction: column; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); box-sizing: border-box; }
         .drawer.active { bottom: 0; }
-        .drawer-handle { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 15px; flex-shrink: 0; }
-        .drawer h3 { margin: 0 0 15px 0; text-transform: uppercase; font-size: 14px; text-align: center; }
-        .drawer textarea { width: 100%; flex-grow: 1; min-height: 150px; border: 2px solid #000; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 16px !important; outline: none; font-family: inherit; resize: none; }
+        
+        #dText { min-height: 150px; padding: 10px; border: 2px solid #000; font-size: 16px; margin-bottom: 15px; resize: none; outline: none; }
+        .btn { padding: 8px 16px; border: 2px solid #000; background: #fff; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .btn:hover { background: #000; color: #fff !important; }
 
-        .mobile-tabs { display: none; }
+        .mobile-tabs-container { display: none; }
+        
         @media (max-width: 850px) {
-            .sheet { grid-template-columns: 1fr 1fr; grid-template-areas: "name name" "person person" "state saves" "chars chars" "tabs tabs" "t-content t-content" "traumas traumas" "notes notes"; }
-            .mobile-tabs { display: flex; grid-area: tabs; gap: 4px; margin: 10px 0; }
-            .tab-btn { flex: 1; padding: 10px; border: 2px solid #000; background: #fff; font-weight: bold; font-size: 11px; }
-            .tab-btn.active { background: #000; color: #fff; }
-            .sec-skills, .sec-paradigm, .sec-actions { display: none; grid-area: t-content; }
-            .sec-skills.active, .sec-paradigm.active, .sec-actions.active { display: flex; }
-            .drawer { width: 100%; border-radius: 20px 20px 0 0; border: none; }
-            input[type="text"] { font-size: 16px !important; } /* Системный фикс зума */
+            .sheet { display: flex; flex-direction: column; padding: 15px; }
+            #name { font-size: 28px; }
+            .left-area, .right-area, .skills-area { display: contents; }
+            .sec-name { order: 1; }
+            .sec-person { order: 2; }
+            .left-area > .section:nth-child(1) { order: 3; }
+            .left-area > .section:nth-child(2) { order: 4; }
+            .left-area > .section:nth-child(3) { order: 5; }
+            .mobile-tabs-container { display: block; order: 6; margin: 10px 0; }
+            .sec-skills { order: 7; }
+            .sec-paradigm { order: 8; }
+            .sec-actions { order: 9; }
+            .sec-skills, .sec-paradigm, .sec-actions { display: none; width: 100%; }
+            .sec-skills.active, .sec-paradigm.active, .sec-actions.active { display: block; }
+            .right-area > .section:nth-child(2) { order: 10; }
+            .right-area > .section:nth-child(3) { order: 11; }
+            .section { margin-bottom: 15px; }
         }
-
-        #backTop { position: fixed; bottom: 15px; right: 15px; display: none; width: 40px; height: 40px; background: #000; color: #fff; border-radius: 50%; border: none; z-index: 1000; }
-        input[type="text"] { width: 100%; border: none; outline: none; font-size: 14px; background: transparent; }
-        hr { border: 0; border-top: 1px dashed #ccc; margin: 8px 0; }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h1>Бюро Парадигмальных Исследований</h1>
-        <p style="font-size:12px;">Введите код ячейки или создайте новую</p>
-        <input type="text" id="party-key-input" class="auth-input" placeholder="КОД ПАРТИИ">
-        <button class="btn" style="background:#000; color:#fff; padding:12px;" onclick="connectToParty()">ПОДКЛЮЧИТЬСЯ</button>
-        <div style="display:flex; align-items:center; gap:10px;"><hr style="flex:1;"> ИЛИ <hr style="flex:1;"></div>
-        <button class="btn" onclick="createNewParty()">СОЗДАТЬ НОВУЮ ПАРТИЮ</button>
+        <div class="auth-logo">
+            <svg viewBox="0 0 224 196" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+                <rect x="0.5" y="0.5" width="22" height="89" fill="black" stroke="black"/>
+                <rect x="96.5" y="0.5" width="22" height="89" fill="black" stroke="black"/>
+                <rect x="61.5" y="35.5" width="22" height="54" fill="black" stroke="black"/>
+                <rect x="0.5" y="22.5" width="22" height="83" transform="rotate(-90 0.5 22.5)" fill="black" stroke="black"/>
+                <rect x="0.5" y="56.5" width="22" height="83" transform="rotate(-90 0.5 56.5)" fill="black" stroke="black"/>
+                <rect x="119.5" y="56.5" width="22" height="13" transform="rotate(-90 119.5 56.5)" fill="black" stroke="black"/>
+                <rect x="144.5" y="184.5" width="68" height="68" transform="rotate(-90 144.5 184.5)" stroke="black" stroke-width="23"/>
+                <rect x="0.5" y="90.5002" width="22" height="83" transform="rotate(-90 0.5 90.5002)" fill="black" stroke="black"/>
+                <path d="M119 196H0V105H119V196ZM95.4688 152.779C84.053 137.581 54.8739 117.642 22.7002 149.606C22.3546 149.95 22.3102 150.523 22.5977 150.916C49.7589 188.049 79.9343 170.456 93.7314 155.5L95.3193 154.101C95.7052 153.76 95.7775 153.191 95.4688 152.779Z" fill="black"/>
+                <path d="M22.7584 148.147C38.7794 132.611 54.1725 129.603 67.0895 132.531C80.1308 135.488 90.4654 144.453 96.2682 152.179C96.9059 153.028 96.7382 154.182 95.9811 154.85L94.4244 156.221C87.4394 163.778 76.2658 172.069 63.3033 173.733C50.2092 175.415 35.5416 170.306 21.7906 151.507C21.2122 150.716 21.2976 149.59 21.9947 148.897L22.7584 148.147ZM66.6471 134.482C54.2836 131.68 39.2863 134.54 23.4098 150.311C23.4091 150.313 23.4091 150.316 23.4088 150.32C23.4084 150.325 23.4084 150.329 23.4088 150.331C36.8177 168.66 50.8175 173.321 63.0494 171.75C75.3889 170.165 86.1819 162.209 92.9967 154.822C93.5181 154.257 94.0128 153.693 94.485 153.14C88.8401 145.724 78.9589 137.273 66.6471 134.482Z" fill="black"/>
+                <path d="M224 90H133V0H224V90ZM178.98 12C176.165 18.113 165.664 30.9188 146.178 33.2393C142.812 47.2843 144.662 76.0043 178.98 78.5234C214.758 74.5923 213.549 45.5669 212.57 33.2393C204.95 32.8893 187.564 28.1517 178.98 12Z" fill="black"/>
+                <path d="M176.793 64.4207C176.209 64.0238 172.826 65.9728 171.207 66.9969C173.645 69.3823 180.105 72.7218 186.447 66.9969C185.157 65.455 181.841 64.637 180.343 64.4207L178.789 65.6802C178.366 65.4258 177.376 64.8176 176.793 64.4207Z" fill="black" stroke="black" stroke-width="1.57392"/>
+                <path d="M174.93 57.8945C175.723 57.6845 177.271 57.738 177.118 59.631" stroke="black" stroke-width="1.57392"/>
+                <path d="M182.926 57.8945C182.132 57.6845 180.584 57.738 180.738 59.631" stroke="black" stroke-width="1.57392"/>
+                <path d="M164.841 43.2265C161.258 42.3098 157.013 43.1066 152.717 47.4569C152.412 47.7661 152.415 48.2638 152.724 48.5692C153.033 48.8746 153.532 48.8717 153.837 48.5624C157.787 44.5625 161.472 43.9887 164.452 44.7509C167.503 45.5315 169.96 47.7525 171.277 49.577C171.531 49.9293 172.023 50.009 172.375 49.7548C172.728 49.5004 172.806 49.0085 172.552 48.6561C171.092 46.6324 168.353 44.1248 164.841 43.2265Z" fill="black"/>
+                <path d="M194.096 43.2265C197.68 42.3098 201.925 43.1066 206.22 47.4569C206.526 47.7661 206.523 48.2638 206.214 48.5692C205.904 48.8746 205.406 48.8717 205.1 48.5624C201.15 44.5625 197.465 43.9887 194.486 44.7509C191.435 45.5315 188.977 47.7525 187.661 49.577C187.406 49.9293 186.915 50.009 186.562 49.7548C186.21 49.5004 186.131 49.0085 186.385 48.6561C187.846 46.6324 190.585 44.1248 194.096 43.2265Z" fill="black"/>
+                <path d="M171.914 43.2231C169.137 39.3747 161.522 33.7656 153.277 42.1163" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+                <path d="M188.172 30.6648C185.395 26.8164 178.073 22.059 169.71 29.7892" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+                <path d="M188.165 30.6833C184.563 32.8138 178.001 37.7409 169.747 29.8009" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+                <path d="M187.023 43.2231C189.8 39.3747 197.415 33.7656 205.661 42.1163" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+                <path d="M199.805 47.513C199.805 49.6419 198.069 51.3677 195.928 51.3677C193.787 51.3677 192.051 49.6419 192.051 47.513C192.051 45.384 193.787 43.6582 195.928 43.6582C198.069 43.6582 199.805 45.384 199.805 47.513Z" fill="black"/>
+                <ellipse cx="179.037" cy="29.8811" rx="3.87722" ry="3.85476" fill="black"/>
+                <path d="M166.485 47.513C166.485 49.6419 164.749 51.3677 162.608 51.3677C160.466 51.3677 158.73 49.6419 158.73 47.513C158.73 45.384 160.466 43.6582 162.608 43.6582C164.749 43.6582 166.485 45.384 166.485 47.513Z" fill="black"/>
+                <path d="M59.248 136.285C67.2516 136.286 73.7295 142.735 73.7295 150.678C73.7294 158.621 67.2516 165.07 59.248 165.071C51.2444 165.071 44.7657 158.621 44.7656 150.678C44.7656 142.735 51.2443 136.285 59.248 136.285Z" stroke="black" stroke-width="2"/>
+                <ellipse cx="64.2227" cy="145.5" rx="7" ry="6.5" fill="black"/>
+            </svg>
+        </div>
+        <h1>Бюро</h1>
+        <input type="text" id="party-key-input" class="auth-input" placeholder="XXX-XXX">
+        <button class="btn" style="background:#000; color:#fff !important;" onclick="connectToParty()">ПОДКЛЮЧИТЬСЯ</button>
+        <button class="btn" onclick="createNewParty()">СОЗДАТЬ ЯЧЕЙКУ</button>
     </div>
 </div>
 
-<div class="top-bar">
-    <div class="char-tabs" id="char-tabs-list"></div>
-    <button class="tab-char add-char" onclick="addNewCharacter()">+</button>
-    <div class="controls">
-        <button class="btn" onclick="fetchUpdate()">🔄</button>
-        <div id="display-key" onclick="copyKey()">🔑 KEY</div>
-        <span id="sync-status">Готов</span>
+<div class="app-header">
+    <div class="logo">
+        <svg viewBox="0 0 224 196" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0.5" y="0.5" width="22" height="89" fill="black" stroke="black"/>
+            <rect x="96.5" y="0.5" width="22" height="89" fill="black" stroke="black"/>
+            <rect x="61.5" y="35.5" width="22" height="54" fill="black" stroke="black"/>
+            <rect x="0.5" y="22.5" width="22" height="83" transform="rotate(-90 0.5 22.5)" fill="black" stroke="black"/>
+            <rect x="0.5" y="56.5" width="22" height="83" transform="rotate(-90 0.5 56.5)" fill="black" stroke="black"/>
+            <rect x="119.5" y="56.5" width="22" height="13" transform="rotate(-90 119.5 56.5)" fill="black" stroke="black"/>
+            <rect x="144.5" y="184.5" width="68" height="68" transform="rotate(-90 144.5 184.5)" stroke="black" stroke-width="23"/>
+            <rect x="0.5" y="90.5002" width="22" height="83" transform="rotate(-90 0.5 90.5002)" fill="black" stroke="black"/>
+            <path d="M119 196H0V105H119V196ZM95.4688 152.779C84.053 137.581 54.8739 117.642 22.7002 149.606C22.3546 149.95 22.3102 150.523 22.5977 150.916C49.7589 188.049 79.9343 170.456 93.7314 155.5L95.3193 154.101C95.7052 153.76 95.7775 153.191 95.4688 152.779Z" fill="black"/>
+            <path d="M22.7584 148.147C38.7794 132.611 54.1725 129.603 67.0895 132.531C80.1308 135.488 90.4654 144.453 96.2682 152.179C96.9059 153.028 96.7382 154.182 95.9811 154.85L94.4244 156.221C87.4394 163.778 76.2658 172.069 63.3033 173.733C50.2092 175.415 35.5416 170.306 21.7906 151.507C21.2122 150.716 21.2976 149.59 21.9947 148.897L22.7584 148.147ZM66.6471 134.482C54.2836 131.68 39.2863 134.54 23.4098 150.311C23.4091 150.313 23.4091 150.316 23.4088 150.32C23.4084 150.325 23.4084 150.329 23.4088 150.331C36.8177 168.66 50.8175 173.321 63.0494 171.75C75.3889 170.165 86.1819 162.209 92.9967 154.822C93.5181 154.257 94.0128 153.693 94.485 153.14C88.8401 145.724 78.9589 137.273 66.6471 134.482Z" fill="black"/>
+            <path d="M224 90H133V0H224V90ZM178.98 12C176.165 18.113 165.664 30.9188 146.178 33.2393C142.812 47.2843 144.662 76.0043 178.98 78.5234C214.758 74.5923 213.549 45.5669 212.57 33.2393C204.95 32.8893 187.564 28.1517 178.98 12Z" fill="black"/>
+            <path d="M176.793 64.4207C176.209 64.0238 172.826 65.9728 171.207 66.9969C173.645 69.3823 180.105 72.7218 186.447 66.9969C185.157 65.455 181.841 64.637 180.343 64.4207L178.789 65.6802C178.366 65.4258 177.376 64.8176 176.793 64.4207Z" fill="black" stroke="black" stroke-width="1.57392"/>
+            <path d="M174.93 57.8945C175.723 57.6845 177.271 57.738 177.118 59.631" stroke="black" stroke-width="1.57392"/>
+            <path d="M182.926 57.8945C182.132 57.6845 180.584 57.738 180.738 59.631" stroke="black" stroke-width="1.57392"/>
+            <path d="M164.841 43.2265C161.258 42.3098 157.013 43.1066 152.717 47.4569C152.412 47.7661 152.415 48.2638 152.724 48.5692C153.033 48.8746 153.532 48.8717 153.837 48.5624C157.787 44.5625 161.472 43.9887 164.452 44.7509C167.503 45.5315 169.96 47.7525 171.277 49.577C171.531 49.9293 172.023 50.009 172.375 49.7548C172.728 49.5004 172.806 49.0085 172.552 48.6561C171.092 46.6324 168.353 44.1248 164.841 43.2265Z" fill="black"/>
+            <path d="M194.096 43.2265C197.68 42.3098 201.925 43.1066 206.22 47.4569C206.526 47.7661 206.523 48.2638 206.214 48.5692C205.904 48.8746 205.406 48.8717 205.1 48.5624C201.15 44.5625 197.465 43.9887 194.486 44.7509C191.435 45.5315 188.977 47.7525 187.661 49.577C187.406 49.9293 186.915 50.009 186.562 49.7548C186.21 49.5004 186.131 49.0085 186.385 48.6561C187.846 46.6324 190.585 44.1248 194.096 43.2265Z" fill="black"/>
+            <path d="M171.914 43.2231C169.137 39.3747 161.522 33.7656 153.277 42.1163" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+            <path d="M188.172 30.6648C185.395 26.8164 178.073 22.059 169.71 29.7892" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+            <path d="M188.165 30.6833C184.563 32.8138 178.001 37.7409 169.747 29.8009" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+            <path d="M187.023 43.2231C189.8 39.3747 197.415 33.7656 205.661 42.1163" stroke="black" stroke-width="1.57392" stroke-linecap="round"/>
+            <path d="M199.805 47.513C199.805 49.6419 198.069 51.3677 195.928 51.3677C193.787 51.3677 192.051 49.6419 192.051 47.513C192.051 45.384 193.787 43.6582 195.928 43.6582C198.069 43.6582 199.805 45.384 199.805 47.513Z" fill="black"/>
+            <ellipse cx="179.037" cy="29.8811" rx="3.87722" ry="3.85476" fill="black"/>
+            <path d="M166.485 47.513C166.485 49.6419 164.749 51.3677 162.608 51.3677C160.466 51.3677 158.73 49.6419 158.73 47.513C158.73 45.384 160.466 43.6582 162.608 43.6582C164.749 43.6582 166.485 45.384 166.485 47.513Z" fill="black"/>
+            <path d="M59.248 136.285C67.2516 136.286 73.7295 142.735 73.7295 150.678C73.7294 158.621 67.2516 165.07 59.248 165.071C51.2444 165.071 44.7657 158.621 44.7656 150.678C44.7656 142.735 51.2443 136.285 59.248 136.285Z" stroke="black" stroke-width="2"/>
+            <ellipse cx="64.2227" cy="145.5" rx="7" ry="6.5" fill="black"/>
+        </svg>
     </div>
+    <div class="burger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+</div>
+
+<div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+<div class="menu-drawer" id="menu-drawer">
+    <div class="menu-section">
+        <div class="menu-title">Партия</div>
+        <div id="display-key" style="font-family:monospace; font-size:18px; margin-bottom:10px; border:1px dashed #000; padding:5px; text-align:center;"></div>
+        <button class="btn" style="width:100%" onclick="copyKey()">Копировать ключ</button>
+    </div>
+    <div class="menu-section" style="flex-grow:1; overflow-y:auto;">
+        <div class="menu-title">Агенты</div>
+        <div id="char-list-container"></div>
+        <div class="char-list-item add-new" onclick="addNewCharacter()">+ НОВЫЙ АГЕНТ</div>
+    </div>
+    <button class="btn" onclick="fetchUpdate()">Обновить данные 🔄</button>
 </div>
 
 <div class="sheet">
-    <div class="section sec-name"><div class="header">Имя</div><div class="content"><input type="text" id="name" oninput="updateCharName(this.value); autoSave()"></div></div>
-    
+    <div class="section sec-name" style="border:none">
+        <textarea id="name" placeholder="ИМЯ АГЕНТА" rows="1" oninput="adjustNameHeight(this); updateCharName(this.value); autoSave()"></textarea>
+    </div>
+
     <div class="section sec-person">
-        <div class="sub-tabs">
-            <div class="sub-tab active" id="tab-trait-btn" onclick="switchPersonTab('trait')">Черты</div>
-            <div class="sub-tab" id="tab-flaw-btn" onclick="switchPersonTab('flaw')">Изъяны</div>
-            <div class="add-btn" style="top:5px;" onclick="addCurrentSubItem()">+</div>
+        <div class="content">
+            <div class="pill-tabs">
+                <div class="pill-btn active" id="tab-trait-btn" onclick="switchPersonTab('trait')">Черты</div>
+                <div class="pill-btn" id="tab-flaw-btn" onclick="switchPersonTab('flaw')">Изъяны</div>
+                <div class="add-btn" style="position:static; transform:none;" onclick="addCurrentSubItem()">+</div>
+            </div>
+            <div id="panel-trait" class="list-container"></div>
+            <div id="panel-flaw" class="list-container" style="display:none;"></div>
         </div>
-        <div id="panel-trait" class="content"><div id="trait-list" class="list-container"></div></div>
-        <div id="panel-flaw" class="content" style="display:none;"><div id="flaw-list" class="list-container"></div></div>
-    </div>
-    
-    <div class="section sec-state"><div class="header">Состояние</div><div class="content stat-grid">
-        <div><div class="circle-stat"><input type="text" data-id="hp" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Раны</div></div>
-        <div><div class="circle-stat"><input type="text" data-id="ar" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Броня</div></div>
-        <div><div class="circle-stat"><input type="text" data-id="sa" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Рассуд.</div></div>
-    </div></div>
-
-    <div class="section sec-saves"><div class="header">Спасброски</div><div class="content stat-grid">
-        <div><div class="circle-stat"><input type="text" data-id="sv1" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Уклон.</div></div>
-        <div><div class="circle-stat"><input type="text" data-id="sv2" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Психика</div></div>
-    </div></div>
-
-    <div class="section sec-chars"><div class="header">Характеристики</div><div class="content stat-grid">
-        <div><div class="circle-stat"><input type="text" data-id="b" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Тело</div></div>
-        <div><div class="circle-stat"><input type="text" data-id="m" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Разум</div></div>
-        <div><div class="circle-stat"><input type="text" data-id="s" value="0" oninput="validateValue(this); autoSave()"></div><div class="label">Душа</div></div>
-    </div></div>
-
-    <div class="mobile-tabs">
-        <button class="tab-btn active" onclick="setTab('skills', this)">Навыки</button>
-        <button class="tab-btn" onclick="setTab('paradigm', this)">Парадигма</button>
-        <button class="tab-btn" onclick="setTab('actions', this)">Действия</button>
     </div>
 
-    <div class="section sec-skills active"><div class="header">Навыки</div><div class="content" id="skills-list"></div></div>
-    <div class="section sec-paradigm"><div class="header">Парадигма</div><div class="content" id="paradigm-list"></div></div>
-    <div class="section sec-actions"><div class="header">Действия</div><div class="content" id="actions-list"></div></div>
-
-    <div class="section sec-traumas">
-        <div class="header">Психические травмы <div class="add-btn" onclick="openDrawer('trauma', -1)">+</div></div>
-        <div class="content"><div id="trauma-list" class="list-container"></div></div>
+    <div class="side-col left-area">
+        <div class="section">
+            <div class="header">Состояние</div>
+            <div class="content stat-grid">
+                <div><div class="circle-stat"><input type="number" data-id="hp" oninput="validateStat(this); autoSave()"></div><div class="label">Раны</div></div>
+                <div><div class="circle-stat"><input type="number" data-id="ar" oninput="validateStat(this); autoSave()"></div><div class="label">Броня</div></div>
+                <div><div class="circle-stat"><input type="number" data-id="sa" oninput="validateStat(this); autoSave()"></div><div class="label">Рассуд.</div></div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="header">Характеристики</div>
+            <div class="content stat-grid">
+                <div><div class="circle-stat"><input type="number" data-id="b" oninput="validateStat(this); autoSave()"></div><div class="label">Тело</div></div>
+                <div><div class="circle-stat"><input type="number" data-id="m" oninput="validateStat(this); autoSave()"></div><div class="label">Разум</div></div>
+                <div><div class="circle-stat"><input type="number" data-id="s" oninput="validateStat(this); autoSave()"></div><div class="label">Душа</div></div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="header">Спасброски</div>
+            <div class="content stat-grid">
+                <div><div class="circle-stat"><input type="number" data-id="sv1" oninput="validateStat(this); autoSave()"></div><div class="label">Уклон.</div></div>
+                <div><div class="circle-stat"><input type="number" data-id="sv2" oninput="validateStat(this); autoSave()"></div><div class="label">Психика</div></div>
+            </div>
+        </div>
+        <div class="section sec-paradigm">
+            <div class="header">Парадигма</div>
+            <div class="content" id="paradigm-list"></div>
+        </div>
     </div>
 
-    <div class="section sec-notes">
-        <div class="header">Заметки <div class="add-btn" onclick="openDrawer('note', -1)">+</div></div>
-        <div class="content"><div id="note-list" class="list-container"></div></div>
+    <div class="skills-area">
+        <div class="mobile-tabs-container">
+            <div class="pill-tabs" style="justify-content:center;">
+                <div class="pill-btn active tab-m-btn" onclick="setMobileTab('skills', this)">Навыки</div>
+                <div class="pill-btn tab-m-btn" onclick="setMobileTab('paradigm', this)">Парадигма</div>
+                <div class="pill-btn tab-m-btn" onclick="setMobileTab('actions', this)">Действия</div>
+            </div>
+        </div>
+        <div class="section sec-skills active">
+            <div class="header">Навыки</div>
+            <div class="content" id="skills-list"></div>
+        </div>
+    </div>
+
+    <div class="side-col right-area">
+        <div class="section sec-actions">
+            <div class="header">Действия</div>
+            <div class="content" id="actions-list"></div>
+        </div>
+        <div class="section">
+            <div class="header">Травмы <div class="add-btn" onclick="openDrawer('trauma', -1)">+</div></div>
+            <div class="content"><div id="trauma-list" class="list-container"></div></div>
+        </div>
+        <div class="section" style="flex-grow:1;">
+            <div class="header">Заметки <div class="add-btn" onclick="openDrawer('note', -1)">+</div></div>
+            <div class="content"><div id="note-list" class="list-container"></div></div>
+        </div>
     </div>
 </div>
 
 <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
 <div id="uDrawer" class="drawer">
-    <div class="drawer-handle" onclick="closeDrawer()"></div>
     <h3 id="dTitle">Запись</h3>
     <textarea id="dText"></textarea>
-    <div style="display:flex; justify-content:space-between; gap:10px; margin-top:20px;">
-        <button id="dDelBtn" class="btn" style="color:red; border-color:red; display:none;" onclick="deleteEntry()">Удалить</button>
+    <div style="display:flex; justify-content:space-between; gap:10px;">
+        <button id="dDelBtn" class="btn" style="color:red; border-color:red;" onclick="deleteEntry()">Удалить</button>
         <div style="display:flex; gap:10px; margin-left:auto;">
             <button class="btn" onclick="closeDrawer()">Отмена</button>
-            <button class="btn" style="background:#000; color:#fff;" onclick="saveDrawer()">Готово</button>
+            <button class="btn" style="background:#000; color:#fff !important;" onclick="saveDrawer()">Готово</button>
         </div>
     </div>
 </div>
 
-<button id="backTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</button>
-
 <script>
     const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxGIirmjfctTSgafg-WAXDdQwI7v4iJTVi-Ijp9b58uEclIdshg1OtRcqMWUt_1gh4vaw/exec';
-    const SKILLS = ["Внимание", "Эрудиция", "Наука", "Оккультизм", "Компьютеры", "Медицина", "Ремонт", "sep", "Ближний бой", "Легк. оружие", "Тяж. оружие", "Психическая сила", "sep", "Убеждение", "Обман", "Запугивание", "sep", "Атлетика", "Уклонение", "Скрытность", "Взлом"];
+    const SKILLS = ["Внимание", "Эрудиция", "Наука", "Оккультизм", "Компьютеры", "Медицина", "Ремонт", "sep", "Ближний бой", "Легк. оружие", "Тяж. оружие", "Психическая сила", "sep", "Убеждение", "Обман", "Запугивание", "sep", "Атлетика", "Уклонение", "Скрытность", "Взлом", "sep", "custom1", "custom2", "custom3", "custom4"];
+    const ACTIONS = ["Ответный выстрел", "Доп. выстрел", "Атака возможности", "Контр-атака", "Доп. удар"];
+    const TYPE_LABELS = { note: 'Заметка', trauma: 'Травма', flaw: 'Изъян', trait: 'Черта' };
 
-    let characters = [];
-    let activeCharIndex = 0;
-    let currentPartyId = '';
-    let curType = '', curIdx = -1;
-    let activeSubTab = 'trait';
-    let syncTimer;
+    let characters = [], activeCharIndex = 0, currentPartyId = '', curType = '', curIdx = -1, activeSubTab = 'trait', syncTimer;
 
-    function validateValue(el) {
-        let val = parseInt(el.value);
-        if (isNaN(val)) return;
-        if (val > 100) el.value = 100;
-        if (val < 0) el.value = 0;
-    }
-
-    function autoSave() {
-        document.getElementById('sync-status').innerText = "✏️...";
-        clearTimeout(syncTimer);
-        syncTimer = setTimeout(() => { syncWithCloud(); }, 2000); 
-    }
+    function adjustNameHeight(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
+    function validateStat(el) { let val = el.value.replace(/\D/g, ''); if (val !== "") { let num = parseInt(val); if (num > 100) num = 100; if (num < 0) num = 0; el.value = num; } else { el.value = ""; } }
+    function toggleMenu() { document.getElementById('menu-drawer').classList.toggle('active'); document.getElementById('menu-overlay').classList.toggle('active'); }
+    function autoSave() { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncWithCloud(), 2000); }
 
     async function syncWithCloud() {
         if(!currentPartyId) return;
         saveCurrentToState();
-        try {
-            await fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ partyId: currentPartyId, content: JSON.stringify(characters) }) });
-            document.getElementById('sync-status').innerText = "✅";
-        } catch (e) { document.getElementById('sync-status').innerText = "❌"; }
+        try { await fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ partyId: currentPartyId, content: JSON.stringify(characters) }) }); } 
+        catch (e) { console.error("Sync error", e); }
     }
 
     async function fetchUpdate() {
         if(!currentPartyId) return;
         try {
-            const response = await fetch(`${CLOUD_URL}?partyId=${currentPartyId}`);
-            const text = await response.text();
-            if (text && text !== "Not Found") {
-                characters = JSON.parse(text);
-                renderTabs(); loadActiveToUI();
-                document.getElementById('sync-status').innerText = "✅";
-            }
-        } catch (e) {}
+            const res = await fetch(`${CLOUD_URL}?partyId=${currentPartyId}`);
+            const text = await res.text();
+            if (text && text !== "Not Found") { characters = JSON.parse(text); renderCharList(); loadActiveToUI(); }
+        } catch (e) { console.error("Fetch error", e); }
     }
 
     async function connectToParty() {
         const key = document.getElementById('party-key-input').value.trim().toUpperCase();
-        if (!key) return;
-        try {
-            const response = await fetch(`${CLOUD_URL}?partyId=${key}`);
-            const text = await response.text();
-            if (text !== "Not Found" && text) { characters = JSON.parse(text); currentPartyId = key; finishAuth(); }
-            else alert("Не найдено");
-        } catch (e) {}
+        if(!key) return;
+        const res = await fetch(`${CLOUD_URL}?partyId=${key}`);
+        const text = await res.text();
+        if (text !== "Not Found") { characters = JSON.parse(text); currentPartyId = key; finishAuth(); }
+        else { alert("Партия не найдена"); }
     }
 
-    function createNewParty() {
-        currentPartyId = Math.random().toString(36).substr(2, 6).toUpperCase();
-        characters = [createNewCharObj("Герой 1")];
-        finishAuth(); syncWithCloud();
+    function createNewParty() { currentPartyId = Math.random().toString(36).substr(2, 6).toUpperCase(); characters = [createNewCharObj("Агент 1")]; finishAuth(); syncWithCloud(); }
+    function finishAuth() { document.getElementById('auth-screen').style.display = 'none'; document.getElementById('display-key').innerText = currentPartyId; initLayout(); renderCharList(); loadActiveToUI(); }
+    
+    // Чистый объект нового персонажа
+    function createNewCharObj(name) { 
+        return { 
+            meta: { n: name }, 
+            stats: { hp:"", ar:"", sa:"", b:"", m:"", s:"", sv1:"", sv2:"" }, 
+            skills: {}, 
+            traumas: [], notes: [], flaws: [], traits: [], rads: [], par: ["", "", ""],
+            customSkillNames: ["", "", "", ""]
+        }; 
+    }
+    
+    function addNewCharacter() { 
+        saveCurrentToState(); 
+        const newChar = createNewCharObj("Новый агент");
+        characters.push(newChar); 
+        activeCharIndex = characters.length - 1; 
+        
+        // Сброс всех инпутов в UI перед загрузкой
+        document.querySelectorAll('input').forEach(i => i.value = "");
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('filled'));
+        
+        renderCharList(); 
+        loadActiveToUI(); 
+        autoSave(); 
+        toggleMenu(); 
     }
 
-    function finishAuth() {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('display-key').innerText = "🔑 " + currentPartyId;
-        renderTabs(); loadActiveToUI();
-    }
-
-    function createNewCharObj(name) {
-        return { meta: { n: name }, stats: { hp: "0", ar: "0", sa: "0", sv1: "0", sv2: "0", b: "0", m: "0", s: "0" }, skills: {}, traumas: [], notes: [], flaws: [], traits: [], rads: [false, false, false, false, false], par: ["", "", ""] };
-    }
-
-    function addNewCharacter() {
-        saveCurrentToState();
-        characters.push(createNewCharObj("Новый герой"));
-        activeCharIndex = characters.length - 1;
-        renderTabs(); loadActiveToUI(); autoSave();
-    }
-
-    function switchCharacter(idx) {
-        saveCurrentToState(); activeCharIndex = idx;
-        renderTabs(); loadActiveToUI();
-    }
-
-    function updateCharName(val) { characters[activeCharIndex].meta.n = val; renderTabs(); }
+    function switchCharacter(idx) { saveCurrentToState(); activeCharIndex = idx; renderCharList(); loadActiveToUI(); toggleMenu(); }
+    function updateCharName(val) { characters[activeCharIndex].meta.n = val; renderCharList(); }
 
     function saveCurrentToState() {
-        if (!characters[activeCharIndex]) return;
         const c = characters[activeCharIndex];
+        if(!c) return;
         c.meta.n = document.getElementById('name').value;
         document.querySelectorAll('[data-id]').forEach(i => c.stats[i.dataset.id] = i.value);
-        document.querySelectorAll('.dots').forEach(s => c.skills[s.dataset.skill] = s.querySelectorAll('.filled').length);
-        c.par = Array.from(document.querySelectorAll('.par-input')).map(i => i.value);
-        c.rads = Array.from(document.querySelectorAll('.act-radio')).map(r => r.checked);
+        document.querySelectorAll('.dots').forEach(s => { if(s.dataset.skill) c.skills[s.dataset.skill] = s.querySelectorAll('.filled').length; });
+        c.par = Array.from(document.querySelectorAll('.sec-paradigm .par-input')).map(i => i.value);
+        c.rads = ACTIONS.map((_, i) => document.getElementById(`act-dot-${i}`)?.classList.contains('filled') || false);
+        c.customSkillNames = Array.from(document.querySelectorAll('.sec-skills .par-input')).map(i => i.value);
     }
 
     function loadActiveToUI() {
         const c = characters[activeCharIndex];
-        ['flaws', 'traits', 'notes', 'traumas'].forEach(key => { if(!c[key]) c[key] = []; });
-        document.getElementById('name').value = c.meta.n;
-        Object.keys(c.stats).forEach(k => { const el = document.querySelector(`[data-id="${k}"]`); if(el) el.value = c.stats[k]; });
-        document.querySelectorAll('.dots').forEach(s => {
-            const val = c.skills[s.dataset.skill] || 0;
-            s.querySelectorAll('.dot').forEach((dot, i) => i < val ? dot.classList.add('filled') : dot.classList.remove('filled'));
+        if(!c) return;
+        const nameEl = document.getElementById('name');
+        nameEl.value = c.meta.n || "";
+        adjustNameHeight(nameEl);
+        
+        document.querySelectorAll('[data-id]').forEach(el => { el.value = (c.stats && c.stats[el.dataset.id]) || ""; });
+        document.querySelectorAll('.dots').forEach(s => { 
+            const val = (c.skills && c.skills[s.dataset.skill]) || 0; 
+            s.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('filled', i < val)); 
         });
-        document.querySelectorAll('.par-input').forEach((inp, i) => inp.value = c.par[i] || "");
-        document.querySelectorAll('.act-radio').forEach((rd, i) => { rd.checked = c.rads[i]; rd.dataset.checked = c.rads[i]; });
-        renderLists();
-    }
-
-    function renderLists() {
-        const c = characters[activeCharIndex];
-        const mapItem = (type) => (t, i) => `<div class="list-item" onclick="openDrawer('${type}', ${i})">${t}</div>`;
-        document.getElementById('note-list').innerHTML = (c.notes || []).map(mapItem('note')).join('');
-        document.getElementById('trauma-list').innerHTML = (c.traumas || []).map(mapItem('trauma')).join('');
-        document.getElementById('flaw-list').innerHTML = (c.flaws || []).map(mapItem('flaw')).join('');
-        document.getElementById('trait-list').innerHTML = (c.traits || []).map(mapItem('trait')).join('');
-    }
-
-    function switchPersonTab(type) {
-        activeSubTab = type;
-        document.getElementById('tab-trait-btn').classList.toggle('active', type === 'trait');
-        document.getElementById('tab-flaw-btn').classList.toggle('active', type === 'flaw');
-        document.getElementById('panel-trait').style.display = type === 'trait' ? 'block' : 'none';
-        document.getElementById('panel-flaw').style.display = type === 'flaw' ? 'block' : 'none';
-    }
-
-    function addCurrentSubItem() { openDrawer(activeSubTab, -1); }
-
-    function openDrawer(type, idx) {
-        curType = type; curIdx = idx;
-        const c = characters[activeCharIndex];
-        const titles = { note: 'Заметка', trauma: 'Травма', flaw: 'Изъян', trait: 'Черта' };
-        let data = (type === 'note') ? c.notes : (type === 'trauma') ? c.traumas : (type === 'flaw') ? c.flaws : c.traits;
-        
-        document.getElementById('dTitle').innerText = titles[type];
-        document.getElementById('dText').value = (idx === -1) ? "" : data[idx];
-        document.getElementById('dDelBtn').style.display = (idx === -1) ? 'none' : 'block';
-        
-        document.body.classList.add('lock-scroll');
-        document.getElementById('drawerOverlay').style.display = 'block';
-        setTimeout(() => document.getElementById('uDrawer').classList.add('active'), 10);
-    }
-
-    function closeDrawer() {
-        document.getElementById('uDrawer').classList.remove('active');
-        document.body.classList.remove('lock-scroll');
-        setTimeout(() => document.getElementById('drawerOverlay').style.display = 'none', 300);
-    }
-
-    function saveDrawer() {
-        const val = document.getElementById('dText').value.trim();
-        const c = characters[activeCharIndex];
-        let data = (curType === 'note') ? c.notes : (curType === 'trauma') ? c.traumas : (curType === 'flaw') ? c.flaws : c.traits;
-        if(val) { 
-            if(curIdx === -1) data.push(val); 
-            else data[curIdx] = val; 
-            renderLists(); autoSave(); 
-        }
-        closeDrawer();
-    }
-
-    function deleteEntry() {
-        if(curIdx === -1) return;
-        const c = characters[activeCharIndex];
-        let data = (curType === 'note') ? c.notes : (curType === 'trauma') ? c.traumas : (curType === 'flaw') ? c.flaws : c.traits;
-        data.splice(curIdx, 1);
-        renderLists(); autoSave(); closeDrawer();
+        document.querySelectorAll('.sec-paradigm .par-input').forEach((inp, i) => inp.value = (c.par && c.par[i]) || "");
+        document.querySelectorAll('.sec-skills .par-input').forEach((inp, i) => inp.value = (c.customSkillNames && c.customSkillNames[i]) || "");
+        ACTIONS.forEach((_, i) => document.getElementById(`act-dot-${i}`)?.classList.toggle('filled', !!(c.rads && c.rads[i])));
+        renderTextLists();
     }
 
     function initLayout() {
         const sc = document.getElementById('skills-list'); sc.innerHTML = '';
         SKILLS.forEach(s => {
             if(s === "sep") sc.innerHTML += '<hr>';
+            else if(s.startsWith("custom")) sc.innerHTML += `<div class="item-row"><div class="dots" data-skill="${s}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><input type="text" class="par-input" oninput="autoSave()" placeholder="Задать навык..."></div>`;
             else sc.innerHTML += `<div class="item-row"><div class="dots" data-skill="${s}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><span>${s}</span></div>`;
         });
         const pc = document.getElementById('paradigm-list'); pc.innerHTML = '';
-        for(let i=0; i<3; i++) pc.innerHTML += `<div class="item-row"><div class="dots" data-skill="p${i}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><input type="text" class="par-input" oninput="autoSave()" placeholder="..."></div>`;
+        for(let i=0; i<3; i++) pc.innerHTML += `<div class="item-row"><div class="dots" data-skill="p${i}">${[1,2,3].map(n => `<div class="dot" onclick="clickDot(this, ${n}); autoSave()"></div>`).join('')}</div><input type="text" class="par-input" oninput="autoSave()"></div>`;
         const ac = document.getElementById('actions-list'); ac.innerHTML = '';
-        ["Ответный выстрел", "Доп. выстрел", "Атака возможности", "Контр-атака", "Доп. удар"].forEach((a, i) => ac.innerHTML += `<div class="action-row"><input type="radio" name="act-${i}" class="act-radio" onclick="toggleRadio(this); autoSave()"><div><strong>${a}</strong></div></div>`);
+        ACTIONS.forEach((a, i) => ac.innerHTML += `<div class="item-row" onclick="toggleAction(${i}); autoSave()" style="cursor:pointer"><span>${a}</span><div class="dot" id="act-dot-${i}" style="margin-left:auto;"></div></div>`);
     }
 
-    function renderTabs() {
-        document.getElementById('char-tabs-list').innerHTML = characters.map((c, i) => `<div class="tab-char ${i===activeCharIndex?'active':''}" onclick="switchCharacter(${i})">${c.meta.n || '...'}</div>`).join('');
-    }
-
-    function clickDot(el, lvl) {
-        const ds = el.parentElement.querySelectorAll('.dot');
-        if(!el.classList.contains('filled')) {
-            if(lvl > 1 && !ds[lvl-2].classList.contains('filled')) return;
-            el.classList.add('filled');
-        } else { for(let i=lvl-1; i<ds.length; i++) ds[i].classList.remove('filled'); }
-    }
-
-    function toggleRadio(r) {
-        if(r.dataset.checked === "true") { r.checked = false; r.dataset.checked = "false"; }
-        else { r.dataset.checked = "true"; }
-    }
-
-    function setTab(name, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-        document.querySelectorAll('.sec-skills, .sec-paradigm, .sec-actions').forEach(s => s.classList.remove('active'));
-        document.querySelector('.sec-' + name).classList.add('active');
-    }
-
-    function copyKey() { navigator.clipboard.writeText(currentPartyId); alert("Код скопирован"); }
-
-    window.onscroll = () => document.getElementById('backTop').style.display = (window.scrollY > 300) ? 'block' : 'none';
-    window.onload = () => { initLayout(); };
-
-    // Service Worker для PWA (In-memory blob)
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            const swCode = `self.addEventListener('fetch', function(event) { event.respondWith(fetch(event.request)); });`;
-            const blob = new Blob([swCode], {type: 'text/javascript'});
-            const swUrl = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error:', err));
-        });
-    }
+    function clickDot(el, lvl) { const ds = el.parentElement.querySelectorAll('.dot'); const isFilled = el.classList.contains('filled'); ds.forEach((d, i) => d.classList.toggle('filled', i < (isFilled ? lvl - 1 : lvl))); }
+    function toggleAction(idx) { document.getElementById(`act-dot-${idx}`).classList.toggle('filled'); }
+    function switchPersonTab(type) { activeSubTab = type; document.getElementById('tab-trait-btn').classList.toggle('active', type === 'trait'); document.getElementById('tab-flaw-btn').classList.toggle('active', type === 'flaw'); document.getElementById('panel-trait').style.display = type === 'trait' ? 'grid' : 'none'; document.getElementById('panel-flaw').style.display = type === 'flaw' ? 'grid' : 'none'; }
+    function openDrawer(type, idx) { curType = type; curIdx = idx; const c = characters[activeCharIndex]; const key = type === 'note' ? 'notes' : type === 'trauma' ? 'traumas' : type === 'flaw' ? 'flaws' : 'traits'; document.getElementById('dTitle').innerText = TYPE_LABELS[type]; document.getElementById('dText').value = idx === -1 ? "" : c[key][idx]; document.getElementById('dDelBtn').style.display = idx === -1 ? 'none' : 'block'; document.getElementById('drawerOverlay').style.display = 'block'; setTimeout(() => document.getElementById('uDrawer').classList.add('active'), 10); }
+    function closeDrawer() { document.getElementById('uDrawer').classList.remove('active'); setTimeout(() => document.getElementById('drawerOverlay').style.display = 'none', 300); }
+    function saveDrawer() { const val = document.getElementById('dText').value.trim(); const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; if(val) { if(curIdx === -1) c[key].push(val); else c[key][curIdx] = val; renderTextLists(); autoSave(); } closeDrawer(); }
+    function deleteEntry() { const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; c[key].splice(curIdx, 1); renderTextLists(); autoSave(); closeDrawer(); }
+    function renderTextLists() { const c = characters[activeCharIndex]; const map = (t, i, type) => `<div class="list-item" onclick="openDrawer('${type}', ${i})">${t}</div>`; document.getElementById('note-list').innerHTML = (c.notes || []).map((t,i)=>map(t,i,'note')).join(''); document.getElementById('trauma-list').innerHTML = (c.traumas || []).map((t,i)=>map(t,i,'trauma')).join(''); document.getElementById('panel-flaw').innerHTML = (c.flaws || []).map((t,i)=>map(t,i,'flaw')).join(''); document.getElementById('panel-trait').innerHTML = (c.traits || []).map((t,i)=>map(t,i,'trait')).join(''); }
+    function renderCharList() { document.getElementById('char-list-container').innerHTML = characters.map((c, i) => `<div class="char-list-item ${i===activeCharIndex?'selected':''}" onclick="switchCharacter(${i})">${c.meta.n || 'Без имени'}</div>`).join(''); }
+    function setMobileTab(name, btn) { document.querySelectorAll('.tab-m-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.sec-skills, .sec-paradigm, .sec-actions').forEach(s => s.classList.remove('active')); const target = document.querySelector('.sec-' + name); if(target) target.classList.add('active'); }
+    function addCurrentSubItem() { openDrawer(activeSubTab, -1); }
+    function copyKey() { navigator.clipboard.writeText(currentPartyId); alert("Ключ скопирован: " + currentPartyId); }
 </script>
-
 </body>
 </html>
