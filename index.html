@@ -2,8 +2,15 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RPG Cloud Sheet — Бюро</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Бюро">
+    
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlJQRyBDbG91ZCBTaGVldCIsCiAgInNob3J0X25hbWUiOiAiQnVyZWF1IiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pbWcuY29uczhhYmxlLmNvbS9wbmcvNTEyL29wdGljYWxfY29sbG9yL2dlbmVyaWNfdXNlci5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
+
     <style>
         :root { --bg: #ffffff; --border: #000; --max-w: 1000px; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
@@ -13,7 +20,9 @@
 
         #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 10px solid #000; box-sizing: border-box; }
         .auth-box { display: flex; flex-direction: column; gap: 15px; width: 300px; text-align: center; }
-        .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px; text-align: center; text-transform: uppercase; outline: none; }
+        
+        /* Фикс зума для iOS: шрифт не менее 16px */
+        .auth-input { padding: 12px; border: 2px solid #000; font-size: 16px !important; text-align: center; text-transform: uppercase; outline: none; width: 100%; box-sizing: border-box; }
 
         .top-bar { display: flex; width: 100%; max-width: var(--max-w); gap: 10px; margin-bottom: 20px; align-items: center; overflow-x: auto; padding-bottom: 5px; }
         .char-tabs { display: flex; gap: 5px; }
@@ -60,7 +69,7 @@
 
         .stat-grid { display: flex; justify-content: space-around; gap: 5px; }
         .circle-stat { width: 42px; height: 42px; border: 2px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-        .circle-stat input { width: 28px; text-align: center; font-weight: bold; border: none; outline: none; font-size: 16px; background: transparent; }
+        .circle-stat input { width: 28px; text-align: center; font-weight: bold; border: none; outline: none; font-size: 16px !important; background: transparent; }
         .label { font-size: 9px; font-weight: bold; text-transform: uppercase; text-align: center; }
         .item-row { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
         .dots { display: flex; gap: 4px; }
@@ -81,7 +90,7 @@
         .drawer.active { bottom: 0; }
         .drawer-handle { width: 40px; height: 5px; background: #ccc; border-radius: 10px; margin: 0 auto 15px; flex-shrink: 0; }
         .drawer h3 { margin: 0 0 15px 0; text-transform: uppercase; font-size: 14px; text-align: center; }
-        .drawer textarea { width: 100%; flex-grow: 1; min-height: 150px; border: 2px solid #000; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 16px; outline: none; font-family: inherit; resize: none; }
+        .drawer textarea { width: 100%; flex-grow: 1; min-height: 150px; border: 2px solid #000; border-radius: 8px; padding: 12px; box-sizing: border-box; font-size: 16px !important; outline: none; font-family: inherit; resize: none; }
 
         .mobile-tabs { display: none; }
         @media (max-width: 850px) {
@@ -92,6 +101,7 @@
             .sec-skills, .sec-paradigm, .sec-actions { display: none; grid-area: t-content; }
             .sec-skills.active, .sec-paradigm.active, .sec-actions.active { display: flex; }
             .drawer { width: 100%; border-radius: 20px 20px 0 0; border: none; }
+            input[type="text"] { font-size: 16px !important; } /* Системный фикс зума */
         }
 
         #backTop { position: fixed; bottom: 15px; right: 15px; display: none; width: 40px; height: 40px; background: #000; color: #fff; border-radius: 50%; border: none; z-index: 1000; }
@@ -399,6 +409,16 @@
 
     window.onscroll = () => document.getElementById('backTop').style.display = (window.scrollY > 300) ? 'block' : 'none';
     window.onload = () => { initLayout(); };
+
+    // Service Worker для PWA (In-memory blob)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const swCode = `self.addEventListener('fetch', function(event) { event.respondWith(fetch(event.request)); });`;
+            const blob = new Blob([swCode], {type: 'text/javascript'});
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error:', err));
+        });
+    }
 </script>
 
 </body>
