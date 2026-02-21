@@ -307,8 +307,15 @@
             <div class="content"><div id="trauma-list" class="list-container"></div></div>
         </div>
         <div class="section" style="flex-grow:1;">
-            <div class="header">Заметки <div class="add-btn" onclick="openDrawer('note', -1)">+</div></div>
-            <div class="content"><div id="note-list" class="list-container"></div></div>
+            <div class="content">
+                <div class="pill-tabs">
+                    <div class="pill-btn active" id="tab-note-btn" onclick="switchNotesTab('note')">Заметки</div>
+                    <div class="pill-btn" id="tab-inventory-btn" onclick="switchNotesTab('inventory')">Инвентарь</div>
+                    <div class="add-btn" style="position:static; transform:none;" onclick="addCurrentNoteItem()">+</div>
+                </div>
+                <div id="note-list" class="list-container"></div>
+                <div id="inventory-list" class="list-container" style="display:none;"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -330,9 +337,9 @@
     const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxGIirmjfctTSgafg-WAXDdQwI7v4iJTVi-Ijp9b58uEclIdshg1OtRcqMWUt_1gh4vaw/exec';
     const SKILLS = ["Внимание", "Эрудиция", "Наука", "Оккультизм", "Компьютеры", "Медицина", "Ремонт", "sep", "Ближний бой", "Легк. оружие", "Тяж. оружие", "Психическая сила", "sep", "Убеждение", "Обман", "Запугивание", "sep", "Атлетика", "Уклонение", "Скрытность", "Взлом", "sep", "custom1", "custom2", "custom3", "custom4"];
     const ACTIONS = ["Ответный выстрел", "Доп. выстрел", "Атака возможности", "Контр-атака", "Доп. удар"];
-    const TYPE_LABELS = { note: 'Заметка', trauma: 'Травма', flaw: 'Изъян', trait: 'Черта' };
+    const TYPE_LABELS = { note: 'Заметка', trauma: 'Травма', flaw: 'Изъян', trait: 'Черта', inventory: 'Инвентарь' };
 
-    let characters = [], activeCharIndex = 0, currentPartyId = '', curType = '', curIdx = -1, activeSubTab = 'trait', syncTimer;
+    let characters = [], activeCharIndex = 0, currentPartyId = '', curType = '', curIdx = -1, activeSubTab = 'trait', activeNoteTab = 'note', syncTimer;
 
     function adjustNameHeight(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
     function validateStat(el) { let val = el.value.replace(/\D/g, ''); if (val !== "") { let num = parseInt(val); if (num > 100) num = 100; if (num < 0) num = 0; el.value = num; } else { el.value = ""; } }
@@ -376,7 +383,7 @@
             meta: { n: name }, 
             stats: { hp:"", ar:"", sa:"", b:"", m:"", s:"", sv1:"", sv2:"" }, 
             skills: {}, 
-            traumas: [], notes: [], flaws: [], traits: [], rads: [], par: ["", "", ""],
+            traumas: [], notes: [], inventory: [], flaws: [], traits: [], rads: [], par: ["", "", ""],
             customSkillNames: ["", "", "", ""],
             customAction: ""
         }; 
@@ -445,14 +452,16 @@
     function clickDot(el, lvl) { const ds = el.parentElement.querySelectorAll('.dot'); const isFilled = el.classList.contains('filled'); ds.forEach((d, i) => d.classList.toggle('filled', i < (isFilled ? lvl - 1 : lvl))); }
     function toggleAction(idx) { document.getElementById(`act-dot-${idx}`).classList.toggle('filled'); }
     function switchPersonTab(type) { activeSubTab = type; document.getElementById('tab-trait-btn').classList.toggle('active', type === 'trait'); document.getElementById('tab-flaw-btn').classList.toggle('active', type === 'flaw'); document.getElementById('panel-trait').style.display = type === 'trait' ? 'grid' : 'none'; document.getElementById('panel-flaw').style.display = type === 'flaw' ? 'grid' : 'none'; }
-    function openDrawer(type, idx) { curType = type; curIdx = idx; const c = characters[activeCharIndex]; const key = type === 'note' ? 'notes' : type === 'trauma' ? 'traumas' : type === 'flaw' ? 'flaws' : 'traits'; document.getElementById('dTitle').innerText = TYPE_LABELS[type]; document.getElementById('dText').value = idx === -1 ? "" : c[key][idx]; document.getElementById('dDelBtn').style.display = idx === -1 ? 'none' : 'block'; document.getElementById('drawerOverlay').style.display = 'block'; setTimeout(() => document.getElementById('uDrawer').classList.add('active'), 10); }
+    function switchNotesTab(type) { activeNoteTab = type; document.getElementById('tab-note-btn').classList.toggle('active', type === 'note'); document.getElementById('tab-inventory-btn').classList.toggle('active', type === 'inventory'); document.getElementById('note-list').style.display = type === 'note' ? 'grid' : 'none'; document.getElementById('inventory-list').style.display = type === 'inventory' ? 'grid' : 'none'; }
+    function openDrawer(type, idx) { curType = type; curIdx = idx; const c = characters[activeCharIndex]; const key = type === 'note' ? 'notes' : type === 'inventory' ? 'inventory' : type === 'trauma' ? 'traumas' : type === 'flaw' ? 'flaws' : 'traits'; document.getElementById('dTitle').innerText = TYPE_LABELS[type]; document.getElementById('dText').value = idx === -1 ? "" : c[key][idx]; document.getElementById('dDelBtn').style.display = idx === -1 ? 'none' : 'block'; document.getElementById('drawerOverlay').style.display = 'block'; setTimeout(() => document.getElementById('uDrawer').classList.add('active'), 10); }
     function closeDrawer() { document.getElementById('uDrawer').classList.remove('active'); setTimeout(() => document.getElementById('drawerOverlay').style.display = 'none', 300); }
-    function saveDrawer() { const val = document.getElementById('dText').value.trim(); const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; if(val) { if(curIdx === -1) c[key].push(val); else c[key][curIdx] = val; renderTextLists(); autoSave(); } closeDrawer(); }
-    function deleteEntry() { const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; c[key].splice(curIdx, 1); renderTextLists(); autoSave(); closeDrawer(); }
-    function renderTextLists() { const c = characters[activeCharIndex]; const map = (t, i, type) => `<div class="list-item" onclick="openDrawer('${type}', ${i})">${t}</div>`; document.getElementById('note-list').innerHTML = (c.notes || []).map((t,i)=>map(t,i,'note')).join(''); document.getElementById('trauma-list').innerHTML = (c.traumas || []).map((t,i)=>map(t,i,'trauma')).join(''); document.getElementById('panel-flaw').innerHTML = (c.flaws || []).map((t,i)=>map(t,i,'flaw')).join(''); document.getElementById('panel-trait').innerHTML = (c.traits || []).map((t,i)=>map(t,i,'trait')).join(''); }
+    function saveDrawer() { const val = document.getElementById('dText').value.trim(); const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'inventory' ? 'inventory' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; if(val) { if(curIdx === -1) c[key].push(val); else c[key][curIdx] = val; renderTextLists(); autoSave(); } closeDrawer(); }
+    function deleteEntry() { const c = characters[activeCharIndex]; const key = curType === 'note' ? 'notes' : curType === 'inventory' ? 'inventory' : curType === 'trauma' ? 'traumas' : curType === 'flaw' ? 'flaws' : 'traits'; c[key].splice(curIdx, 1); renderTextLists(); autoSave(); closeDrawer(); }
+    function renderTextLists() { const c = characters[activeCharIndex]; const map = (t, i, type) => `<div class="list-item" onclick="openDrawer('${type}', ${i})">${t}</div>`; document.getElementById('note-list').innerHTML = (c.notes || []).map((t,i)=>map(t,i,'note')).join(''); document.getElementById('inventory-list').innerHTML = (c.inventory || []).map((t,i)=>map(t,i,'inventory')).join(''); document.getElementById('trauma-list').innerHTML = (c.traumas || []).map((t,i)=>map(t,i,'trauma')).join(''); document.getElementById('panel-flaw').innerHTML = (c.flaws || []).map((t,i)=>map(t,i,'flaw')).join(''); document.getElementById('panel-trait').innerHTML = (c.traits || []).map((t,i)=>map(t,i,'trait')).join(''); }
     function renderCharList() { document.getElementById('char-list-container').innerHTML = characters.map((c, i) => `<div class="char-list-item ${i===activeCharIndex?'selected':''}" onclick="switchCharacter(${i})">${c.meta.n || 'Без имени'}</div>`).join(''); }
     function setMobileTab(name, btn) { document.querySelectorAll('.tab-m-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.sec-skills, .sec-paradigm, .sec-actions').forEach(s => s.classList.remove('active')); const target = document.querySelector('.sec-' + name); if(target) target.classList.add('active'); }
     function addCurrentSubItem() { openDrawer(activeSubTab, -1); }
+    function addCurrentNoteItem() { openDrawer(activeNoteTab, -1); }
     function copyKey() { navigator.clipboard.writeText(currentPartyId); alert("Ключ скопирован: " + currentPartyId); }
 </script>
 </body>
